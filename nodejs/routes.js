@@ -262,10 +262,14 @@ exports.get_timeline = function(req, res) {
     var client = res.locals.mysql;
 
     var retrieveEntries = function(entries) {
-        if (Math.floor(new Date().getTime() / 1000) - start < TIMEOUT) {
+        var query_time = Math.floor(new Date().getTime() / 1000) - start;
+        console.log("QUERY TIME = " + query_time);
+        if (query_time < TIMEOUT) {
             client.query(sql, params, function(err, results) {
+                console.log("TIMELINE ERRORS = " + err);
                 if (err) { throw err; }
 
+                console.log("TIMELINE RESULTS = " + results);
                 if (results.length == 0) {
                     setTimeout(function() {
                         retrieveEntries(entries);

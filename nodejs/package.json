@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "PKG_CONFIG_PATH=/usr/local/lib/pkgconfig npm install --python=/usr/bin/python2 && ISUCON_ENV=isucon node server"
+    "start": "ISUCON_ENV=isucon node server"
   },
   "engines": {
     "node": ">=0.10.19"

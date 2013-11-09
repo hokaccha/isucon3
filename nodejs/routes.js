@@ -25,7 +25,7 @@ function convert(params, callback) {
       width: params.w,
       height: params.h,
       resizeStyle: "aspectfill",
-      quality: 80,
+      quality: 100,
       //format: 'JPEG'
     });
 
@@ -57,7 +57,7 @@ function cropSquare(orig, ext, callback) {
         width: pixels,
         height: pixels,
         resizeStyle: "aspectfill",
-        quality: 80,
+        quality: 100,
         format: result.format
       });
 

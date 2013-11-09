@@ -127,15 +127,26 @@ exports.get_icon = function(req, res) {
 
     var h = w;
 
-    convert({
-        orig: dir + "/icon/" + icon + ".png",
-        w: w,
-        h: h,
-    }, function(err, data) {
-        if (err) { halt(500); return }
+    var cacheFile = dir + "/icon/" + icon + '-' + w + ".png";
+
+    if (fs.existsSync(cacheFile)) {
+      fs.readFile(cacheFile, function(err, data) {
         res.setHeader("Content-Type", "image/png");
         res.end(data, "binary");
-    });
+      });
+    }
+    else {
+      convert({
+          orig: dir + "/icon/" + icon + ".png",
+          w: w,
+          h: h,
+      }, function(err, data) {
+          if (err) { halt(500); return }
+          res.setHeader("Content-Type", "image/png");
+          fs.writeFile(cacheFile, data);
+          res.end(data, "binary");
+      });
+    }
 };
 
 exports.get_image = function(req, res) {
@@ -154,17 +165,28 @@ exports.get_image = function(req, res) {
         var h = w;
 
         if (w) {
-            cropSquare(dir + "/image/" + image + ".jpg", "jpg", function(err, file) {
-                convert({
-                    orig: file,
-                    ext: "jpg",
-                    w: w,
-                    h: h,
-                }, function(err, data) {
-                    res.setHeader("Content-Type", "image/jpeg");
-                    res.end(data, "binary");
-                });
-            });
+            var cacheFile = dir + "/image/" + image + '-' + w + 'x' + h + ".jpg";
+
+            if (fs.existsSync(cacheFile)) {
+              fs.readFile(cacheFile, function(err, data) {
+                res.setHeader("Content-Type", "image/jpeg");
+                res.end(data, "binary");
+              });
+            }
+            else {
+              cropSquare(dir + "/image/" + image + ".jpg", "jpg", function(err, file) {
+                  convert({
+                      orig: file,
+                      ext: "jpg",
+                      w: w,
+                      h: h,
+                  }, function(err, data) {
+                      res.setHeader("Content-Type", "image/jpeg");
+                      fs.writeFile(cacheFile, data);
+                      res.end(data, "binary");
+                  });
+              });
+            }
         }
         else {
             var data = fs.readFileSync(dir + "/image/" + image + ".jpg", "binary");

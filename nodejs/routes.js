@@ -1,8 +1,9 @@
 var fs     = require("fs");
 var crypto = require("crypto");
 var temp   = require("temp");
-var exec   = require("child_process").exec;
 var config = require("./config");
+var exec = require('child_process').exec;
+var imagemagick = require('imagemagick-native');
 
 const ICON_S  = 32;
 const ICON_M  = 64;
@@ -16,68 +17,57 @@ const INTERVAL = 0.1;
 const RETRY_COUNT = 3;
 
 function convert(params, callback) {
-    temp.open("img", function(err, info) {
-        exec([
-            "convert",
-            "-geometry",
-            params.w + "x" + params.h,
-            params.orig,
-            info.path
-        ].join(" "), function(err, stdout) {
-            var data = fs.readFileSync(info.path, "binary");
+  fs.readFile(params.orig, function(err, file) {
+    if (err) return callback(err);
 
-            fs.unlink(info.path, function(err) {
-                if (err) { throw err; }
-
-                process.nextTick(function() {
-                    callback(null, data);
-                });
-            });
-        });
+    var resizedBuffer = imagemagick.convert({
+      srcData: file,
+      width: params.w,
+      height: params.h,
+      resizeStyle: "aspectfill",
+      quality: 80,
+      //format: 'JPEG'
     });
+
+    callback(null, resizedBuffer);
+  });
 };
 
 function cropSquare(orig, ext, callback) {
-    exec("identify " + orig, function(err, stdout) {
-        var size = stdout.split(/ +/)[2].split(/x/);
-        var w    = size[0] - 0;
-        var h    = size[1] - 0;
-        var cropX, cropY, pixels;
+  fs.readFile(orig, function(err, file) {
+    var result = imagemagick.identify({ srcData: file });
+    var w = result.width;
+    var h = result.height;
 
-        if (w > h) {
-            pixels = h;
-            cropX  = Math.floor((w - pixels) / 2);
-            cropY  = 0;
-        }
-        else if (w < h) {
-            pixels = w;
-            cropX  = 0;
-            cropY  = Math.floor((h - pixels) / 2);
-        }
-        else {
-            pixels = w;
-            cropX  = 0;
-            cropY  = 0;
-        }
+    if (w > h) {
+        pixels = h;
+    }
+    else if (w < h) {
+        pixels = w;
+    }
+    else {
+        pixels = w;
+    }
 
-        temp.open("img", function(err, info) {
-            exec([
-                "convert",
-                "-crop",
-                pixels + "x" + pixels + "+" + cropX + "+" + cropY,
-                orig,
-                info.path + "." + ext
-            ].join(" "), function(err, stdout) {
-                fs.unlink(info.path, function(err) {
-                    if (err) { throw err; }
+    temp.open("img", function(err, info) {
+      if (err) return callback(err);
 
-                    process.nextTick(function() {
-                        callback(null, info.path + "." + ext);
-                    });
-                });
-            });
+      var resizedBuffer = imagemagick.convert({
+        srcData: file,
+        width: pixels,
+        height: pixels,
+        resizeStyle: "aspectfill",
+        quality: 80,
+        format: result.format
+      });
+
+      fs.unlink(info.path, function(err) {
+        fs.writeFile(info.path + "." + ext, resizedBuffer, function(err) {
+          callback(null, info.path + "." + ext);
         });
+      });
     });
+  });
 }
 
 function getFollowing(req, res) {
@@ -165,7 +155,7 @@ exports.get_image = function(req, res) {
         var h = w;
 
         if (w) {
-            var file = cropSquare(dir + "/image/" + image + ".jpg", "jpg", function(err, file) {
+            cropSquare(dir + "/image/" + image + ".jpg", "jpg", function(err, file) {
                 convert({
                     orig: file,
                     ext: "jpg",

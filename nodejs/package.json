@@ -12,6 +12,7 @@
     "express": "3.4.0",
     "mysql": "0.9.6",
     "temp": "0.6.0",
-    "newrelic": "~1.1.1"
+    "newrelic": "~1.1.1",
+    "imagemagick-native": "0.2.9"
   }
 }

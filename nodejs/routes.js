@@ -250,7 +250,6 @@ exports.get_timeline = function(req, res) {
     var latest_entry = req.query.latest_entry;
     var sql, params;
 
-    console.log("USER = " + user);
     if (latest_entry) {
         sql    = "SELECT * FROM entries WHERE (user=? OR publish_level=2 OR (publish_level=1 AND user IN (SELECT target FROM follow_map WHERE user=?))) AND id > ? ORDER BY entries.id DESC LIMIT 30";
         params = [user.id, user.id, latest_entry];
@@ -266,15 +265,10 @@ exports.get_timeline = function(req, res) {
 
     var retrieveEntries = function(entries) {
         var query_time = Math.floor(new Date().getTime() / 1000) - start;
-        console.log("ENTRIES = " + entries);
-        console.log("QUERY TIME = " + query_time);
         if (query_time < TIMEOUT && retry < RETRY_COUNT) {
             client.query(sql, params, function(err, results) {
-                console.log("SQL = " + sql);
-                console.log("TIMELINE ERRORS = " + err);
                 if (err) { throw err; }
 
-                console.log("TIMELINE RESULTS = " + results);
                 if (results.length == 0) {
                   process.nextTick(function(){retrieveEntries(entries);});
                   retry++;

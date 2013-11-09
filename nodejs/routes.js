@@ -13,6 +13,7 @@ const IMAGE_L = undefined;
 
 const TIMEOUT  = 2;
 const INTERVAL = 0.1;
+const RETRY_COUNT = 3;
 
 function convert(params, callback) {
     temp.open("img", function(err, info) {
@@ -260,6 +261,7 @@ exports.get_timeline = function(req, res) {
 
     var start  = Math.floor(new Date().getTime() / 1000);
     var client = res.locals.mysql;
+    var retry = 0;
 
     var retrieveEntries = function(entries) {
         var query_time = Math.floor(new Date().getTime() / 1000) - start;
@@ -272,10 +274,9 @@ exports.get_timeline = function(req, res) {
                 if (err) { throw err; }
 
                 console.log("TIMELINE RESULTS = " + results);
-                if (results.length == 0) {
-                    setTimeout(function() {
-                        retrieveEntries(entries);
-                    }, INTERVAL * 1000);
+                if (results.length == 0 && retry < RETRY_COUNT) {
+                  process.nextTick(function(){retrieveEntries(entries);});
+                  retry++;
                 }
                 else {
                     entries = results;

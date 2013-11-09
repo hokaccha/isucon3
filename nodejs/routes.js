@@ -11,8 +11,8 @@ const IMAGE_S = 128;
 const IMAGE_M = 256;
 const IMAGE_L = undefined;
 
-const TIMEOUT  = 30;
-const INTERVAL = 2;
+const TIMEOUT  = 2;
+const INTERVAL = 0.1;
 
 function convert(params, callback) {
     temp.open("img", function(err, info) {

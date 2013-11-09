@@ -52,6 +52,7 @@ else {
         app.use("/js", express.static(path.join(__dirname, "public/js")));
 
         app.use(function(req, res, next) {
+            config.database.user     = config.database.username;
             config.database.database = config.database.dbname;
             res.locals.mysql         = mysql.createClient(config.database);
 

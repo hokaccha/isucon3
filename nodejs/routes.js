@@ -398,7 +398,7 @@ exports.post_icon = function(req, res) {
         return;
     }
 
-    if (! upload.headers["content-type"].match(/^image\/jp?g|png$/)) {
+    if (! upload.headers["content-type"].match(/^image\/jpe?g|png$/)) {
         res.halt(400);
         return;
     }

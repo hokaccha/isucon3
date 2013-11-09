@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "npm install && node server"
+    "start": "npm install && ISUCON_ENV=isucon node server"
   },
   "engines": {
     "node": ">=0.10.19"

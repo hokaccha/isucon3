@@ -143,8 +143,9 @@ exports.get_icon = function(req, res) {
       }, function(err, data) {
           if (err) { halt(500); return }
           res.setHeader("Content-Type", "image/png");
-          fs.writeFile(cacheFile, data);
-          res.end(data, "binary");
+          fs.writeFile(cacheFile, data, function() {
+            res.end(data, "binary");
+          });
       });
     }
 };
@@ -182,8 +183,9 @@ exports.get_image = function(req, res) {
                       h: h,
                   }, function(err, data) {
                       res.setHeader("Content-Type", "image/jpeg");
-                      fs.writeFile(cacheFile, data);
-                      res.end(data, "binary");
+                      fs.writeFile(cacheFile, data, function() {
+                        res.end(data, "binary");
+                      });
                   });
               });
             }

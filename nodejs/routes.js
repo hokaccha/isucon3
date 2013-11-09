@@ -250,7 +250,7 @@ exports.get_timeline = function(req, res) {
     var sql, params;
 
     if (latest_entry) {
-        sql    = "SELECT * FROM (SELECT * FROM entries WHERE (user=? OR publish_level=2 OR (publish_level=1 AND user IN (SELECT target FROM follow_map WHERE user=?))) AND id > ? ORDER BY id LIMIT 30) AS e ORDER BY e.id DESC";
+        sql    = "SELECT * FROM entries WHERE (user=? OR publish_level=2 OR (publish_level=1 AND user IN (SELECT target FROM follow_map WHERE user=?))) AND id > ? ORDER BY entries.id DESC LIMIT 30";
         params = [user.id, user.id, latest_entry];
     }
     else {

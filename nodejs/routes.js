@@ -1,9 +1,8 @@
 var fs     = require("fs");
 var crypto = require("crypto");
 var temp   = require("temp");
+var exec   = require("child_process").exec;
 var config = require("./config");
-var exec = require('child_process').exec;
-var imagemagick = require('imagemagick-native');
 
 const ICON_S  = 32;
 const ICON_M  = 64;
@@ -17,57 +16,68 @@ const INTERVAL = 0.1;
 const RETRY_COUNT = 3;
 
 function convert(params, callback) {
-  fs.readFile(params.orig, function(err, file) {
-    if (err) return callback(err);
+    temp.open("img", function(err, info) {
+        exec([
+            "convert",
+            "-geometry",
+            params.w + "x" + params.h,
+            params.orig,
+            info.path
+        ].join(" "), function(err, stdout) {
+            var data = fs.readFileSync(info.path, "binary");
 
-    var resizedBuffer = imagemagick.convert({
-      srcData: file,
-      width: params.w,
-      height: params.h,
-      resizeStyle: "aspectfill",
-      quality: 100,
-      //format: 'JPEG'
+            fs.unlink(info.path, function(err) {
+                if (err) { throw err; }
+
+                process.nextTick(function() {
+                    callback(null, data);
+                });
+            });
+        });
     });
-
-    callback(null, resizedBuffer);
-  });
 };
 
 function cropSquare(orig, ext, callback) {
-  fs.readFile(orig, function(err, file) {
-    var result = imagemagick.identify({ srcData: file });
-    var w = result.width;
-    var h = result.height;
+    exec("identify " + orig, function(err, stdout) {
+        var size = stdout.split(/ +/)[2].split(/x/);
+        var w    = size[0] - 0;
+        var h    = size[1] - 0;
+        var cropX, cropY, pixels;
 
-    if (w > h) {
-        pixels = h;
-    }
-    else if (w < h) {
-        pixels = w;
-    }
-    else {
-        pixels = w;
-    }
+        if (w > h) {
+            pixels = h;
+            cropX  = Math.floor((w - pixels) / 2);
+            cropY  = 0;
+        }
+        else if (w < h) {
+            pixels = w;
+            cropX  = 0;
+            cropY  = Math.floor((h - pixels) / 2);
+        }
+        else {
+            pixels = w;
+            cropX  = 0;
+            cropY  = 0;
+        }
 
-    temp.open("img", function(err, info) {
-      if (err) return callback(err);
+        temp.open("img", function(err, info) {
+            exec([
+                "convert",
+                "-crop",
+                pixels + "x" + pixels + "+" + cropX + "+" + cropY,
+                orig,
+                info.path + "." + ext
+            ].join(" "), function(err, stdout) {
+                fs.unlink(info.path, function(err) {
+                    if (err) { throw err; }
 
-      var resizedBuffer = imagemagick.convert({
-        srcData: file,
-        width: pixels,
-        height: pixels,
-        resizeStyle: "aspectfill",
-        quality: 100,
-        format: result.format
-      });
-
-      fs.unlink(info.path, function(err) {
-        fs.writeFile(info.path + "." + ext, resizedBuffer, function(err) {
-          callback(null, info.path + "." + ext);
+                    process.nextTick(function() {
+                        callback(null, info.path + "." + ext);
+                    });
+                });
+            });
         });
-      });
     });
-  });
 }
 
 function getFollowing(req, res) {
@@ -128,26 +138,15 @@ exports.get_icon = function(req, res) {
 
     var h = w;
 
-    var cacheFile = dir + "/icon/" + icon + '-' + w + ".png";
-
-    if (fs.existsSync(cacheFile)) {
-      fs.readFile(cacheFile, function(err, data) {
+    convert({
+        orig: dir + "/icon/" + icon + ".png",
+        w: w,
+        h: h,
+    }, function(err, data) {
+        if (err) { halt(500); return }
         res.setHeader("Content-Type", "image/png");
         res.end(data, "binary");
-      });
-    }
-    else {
-      convert({
-          orig: dir + "/icon/" + icon + ".png",
-          w: w,
-          h: h,
-      }, function(err, data) {
-          if (err) { halt(500); return }
-          res.setHeader("Content-Type", "image/png");
-          fs.writeFile(cacheFile, data);
-          res.end(data, "binary");
-      });
-    }
+    });
 };
 
 exports.get_image = function(req, res) {
@@ -166,28 +165,17 @@ exports.get_image = function(req, res) {
         var h = w;
 
         if (w) {
-            var cacheFile = dir + "/image/" + image + '-' + w + 'x' + h + ".jpg";
-
-            if (fs.existsSync(cacheFile)) {
-              fs.readFile(cacheFile, function(err, data) {
-                res.setHeader("Content-Type", "image/jpeg");
-                res.end(data, "binary");
-              });
-            }
-            else {
-              cropSquare(dir + "/image/" + image + ".jpg", "jpg", function(err, file) {
-                  convert({
-                      orig: file,
-                      ext: "jpg",
-                      w: w,
-                      h: h,
-                  }, function(err, data) {
-                      res.setHeader("Content-Type", "image/jpeg");
-                      fs.writeFile(cacheFile, data);
-                      res.end(data, "binary");
-                  });
-              });
-            }
+            var file = cropSquare(dir + "/image/" + image + ".jpg", "jpg", function(err, file) {
+                convert({
+                    orig: file,
+                    ext: "jpg",
+                    w: w,
+                    h: h,
+                }, function(err, data) {
+                    res.setHeader("Content-Type", "image/jpeg");
+                    res.end(data, "binary");
+                });
+            });
         }
         else {
             var data = fs.readFileSync(dir + "/image/" + image + ".jpg", "binary");

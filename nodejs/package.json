@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "PKG_CONFIG_PATH=/usr/local/lib/pkgconfig npm install --python=/usr/bin/python2 && ISUCON_ENV=isucon node server"
+    "start": "npm install && ISUCON_ENV=isucon node server"
   },
   "engines": {
     "node": ">=0.10.19"
@@ -12,7 +12,6 @@
     "express": "3.4.0",
     "mysql": "0.9.6",
     "temp": "0.6.0",
-    "newrelic": "~1.1.1",
-    "imagemagick-native": "0.2.9"
+    "newrelic": "~1.1.1"
   }
 }
